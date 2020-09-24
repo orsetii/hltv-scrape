@@ -1,4 +1,4 @@
-# hltv-scrape
+# hltvscrape
 
 A library that scrapes HLTV for various data relating to the CS:GO professional scene.
 
