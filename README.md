@@ -8,3 +8,11 @@ Download via `go get`:
 ```
 go get -u github.com/orsetii/hltv-scrape
 ```
+
+## TODO 
+
+- Finish data for past match page.
+
+- Create scraper for past matches, which then calls matchdata scrape on each one.
+
+- Add functions to send data into CSV/other format(maybe)
