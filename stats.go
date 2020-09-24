@@ -8,12 +8,10 @@ import (
 
 const baseURL = "https://www.hltv.org"
 
-func ExtractStats(statsPageURL string) (data MapData, err error) {
+func ExtractStats(statsPageURL string) (data MapData, err error) { // @TODO Work on the extract stats function.
 
-	c := colly.NewCollector()                         // Could look to add options here for optimization
-	c.OnHTML(`bold won`, func(e *colly.HTMLElement) { // CHANGE THIS
-	})
-	return MapData{}, nil //placeholder
+	c := colly.NewCollector() // Could look to add options here for optimization
+	return MapData{}, nil     //placeholder
 }
 
 func ExtractMatch(url string) (MatchData, error) {
@@ -27,7 +25,7 @@ func ExtractMatch(url string) (MatchData, error) {
 	// Now we start scraping into the Struct
 	c := colly.NewCollector()
 	// Extract Team Data for both teams via the 'team' div class(s)
-	teamIter := 0
+
 	c.OnHTML(`.team`, func(e *colly.HTMLElement) {
 		// Look for data of first team
 		team0URL, exists := e.DOM.Find(".team1-gradient").Children().Attr("href") // Locates
@@ -40,22 +38,20 @@ func ExtractMatch(url string) (MatchData, error) {
 		} //@TODO grab more data in both statements..
 		team1URL, exists2 := e.DOM.Find(".team2-gradient").Children().Attr("href") // Locates
 		if exists2 {
-			// match.Team1.TeamURL = baseURL + team1URL
-			// match.Team1.TeamID = strings.Split(team1URL, "/")[2]
-			// match.Team1.Name = strings.Split(team1URL, "/")[3]
 			teamURLData(team1URL, &match.Team1)
 			if whoWin(e) {
 				match.Winner = 2
 			}
 
 		}
-		// Match.winner is set if we can find a 'won' div in their children.
-		// If we cant find in either, match is a draw and defaults to that.
 
-		// Team Data for both teams is now extracted.
+		// Match.winner is set if we can find a 'won' div in their children.
+		// If we cant find in either, match has to be a draw and defaults to that.
+
+		// Team Data for both teams (from the match page)is now extracted.
 		//selection.Find() // We can use this to search for elems/values
-		teamIter++
 	})
+
 	c.Visit(url)
 
 	return match, nil
