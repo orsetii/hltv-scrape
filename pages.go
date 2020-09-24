@@ -42,5 +42,5 @@ func GetMapStatPage(matchURL string, mapNum int) (string, error) {
 		return statPageURL, nil
 	}
 
-	return "", errors.New("no Page found for that Map Number.\n")
+	return "", errors.New("no page found for that map number")
 }

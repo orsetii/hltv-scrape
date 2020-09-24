@@ -6,16 +6,19 @@ import (
 
 var ()
 
-type MatchData struct {
+type SeriesScore int8
+type MatchData struct { // @TODO add Map URLS into this struct. Change mapextractdata function to work from the statpage urls.
 	// Data extracted from main match page.
-	MatchURL   string    // URL of the match page.
-	MatchID    string    // The ID of the match as located in the middle of 'url.../matches/{MATCHID}/north-vs...
-	Team0      Team      // Team listed on the left side of HLTV
-	Team1      Team      // Team listed on the right side of HLTV
-	MatchTime  time.Time // Time Match was played.
-	Event      string    // What event the match was played in.
-	BestOfType int       // Best of what? 3 or 1 or 5?
-	Winner     int8      // Team that won the game. 1  for Team0, 2 for Team1 and 0 for a draw.
+	MatchURL         string      // URL of the match page.
+	MatchID          string      // The ID of the match as located in the middle of 'url.../matches/{MATCHID}/north-vs...
+	Team0            Team        // Team listed on the left side of HLTV
+	Team1            Team        // Team listed on the right side of HLTV
+	Team0SeriesScore SeriesScore // Map score for Team0
+	Team1SeriesScore SeriesScore // Map Score for Team1
+	MatchTime        time.Time   // Time Match was played.
+	Event            string      // What event the match was played in.
+	BestOfType       int         // Best of what? 3 or 1 or 5?
+	Winner           int8        // Team that won the game. 1  for Team0, 2 for Team1 and 0 for a draw.
 
 	MapsPlayed []MapData
 	// Scrape Metadata
@@ -24,7 +27,8 @@ type MatchData struct {
 
 type MapData struct {
 	MapName string
-	Winner  bool
+	Winner  int8
+	Picker  int8
 
 	Team0ScoreFirstHalf  int8
 	Team0ScoreSecondHalf int8
