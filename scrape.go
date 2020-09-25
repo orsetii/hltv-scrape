@@ -1,9 +1,5 @@
 package hltvscrape
 
-import (
-	"time"
-)
-
 var ()
 
 type SeriesScore int8
@@ -15,20 +11,24 @@ type MatchData struct { // @TODO add Map URLS into this struct. Change mapextrac
 	Team1            Team        // Team listed on the right side of HLTV
 	Team0SeriesScore SeriesScore // Map score for Team0
 	Team1SeriesScore SeriesScore // Map Score for Team1
-	MatchTime        time.Time   // Time Match was played.
+	MatchTimeEpoch   int         // Unix Time Match was played.
 	Event            string      // What event the match was played in.
-	BestOfType       int         // Best of what? 3 or 1 or 5?
-	Winner           int8        // Team that won the game. 1  for Team0, 2 for Team1 and 0 for a draw.
+	EventID          string      // Id of the event located in the URL, similar to matchID
 
+	BestOfType int    // Best of what? 3 or 1 or 5?
+	Stage      string // What stage of the tournament the match was played in( semi final, final etc...)
+	Winner     int8   // Team that won the game. 1  for Team0, 2 for Team1 and 0 for a draw.
+	MapLinks   []string
 	MapsPlayed []MapData
 	// Scrape Metadata
-	ScrapedAt time.Time // Time webpage was scraped.
+	ScrapedAtEpoc int // Unix Time webpage was scraped.
 }
 
-type MapData struct {
-	MapName string
-	Winner  int8
-	Picker  int8
+type MapData struct { // @TODO add selector strings like XML decoding. Example in: https://github.com/gocolly/colly/blob/master/_examples/hackernews_comments/hackernews_comments.go
+	statPageURL string
+	MapName     string
+	Winner      int8
+	Picker      int8
 
 	Team0ScoreFirstHalf  int8
 	Team0ScoreSecondHalf int8

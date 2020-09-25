@@ -2,6 +2,7 @@ package hltvscrape
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -10,12 +11,14 @@ import (
 
 const baseURL = "https://www.hltv.org"
 
+// ExtractStats is used on a HLTV stats page, it extracts all data into applicable struct(s)
 func ExtractStats(statsPageURL string) (data MapData, err error) { // @TODO Work on the extract stats function.
 
 	//c := colly.NewCollector() // Could look to add options here for optimization
 	return MapData{}, nil //placeholder
 }
 
+// ExtractMatch is used on a HLTV matchPage. It extracts all data from the matchpage, then will call functions to extract data from each player, and each map.
 func ExtractMatch(url string) (match MatchData, err error) {
 
 	// Initilizate MatchData with the data we have from just the URL.
@@ -32,8 +35,8 @@ func ExtractMatch(url string) (match MatchData, err error) {
 		// Look for data of first team
 		team0URL, exists := e.DOM.Find(".team1-gradient").Children().Attr("href") // Locates
 		if exists {
-			teamURLData(team0URL, &match.Team0)
-			res, score, err := whoWin(e)
+			extractTeamURLData(team0URL, &match.Team0)
+			res, score, err := extractWinner(e)
 			parseErr(err)
 			match.Team0SeriesScore = score
 			if res == 1 {
@@ -43,8 +46,8 @@ func ExtractMatch(url string) (match MatchData, err error) {
 		} //@TODO grab more data in both statements..
 		team1URL, exists2 := e.DOM.Find(".team2-gradient").Children().Attr("href") // Locates
 		if exists2 {
-			teamURLData(team1URL, &match.Team1)
-			res, score, err := whoWin(e)
+			extractTeamURLData(team1URL, &match.Team1)
+			res, score, err := extractWinner(e)
 			parseErr(err)
 			match.Team1SeriesScore = score
 			if res == 1 {
@@ -58,9 +61,41 @@ func ExtractMatch(url string) (match MatchData, err error) {
 		// Match.winner is set if we can find a 'won' div in their children.
 		// If we cant find in either, match has to be a draw and defaults to that.
 
-		// Team Data for both teams (from the match page)is now extracted.
-		//selection.Find() // We can use this to search for elems/values
 	})
+	// For each map link avaialable, get the statspage URL.
+	c.OnHTML(`.results-stats`, func(e *colly.HTMLElement) {
+		match.MapLinks = append(match.MapLinks, "https://www.hltv.org"+e.Attr("href"))
+	})
+
+	// This function extracts the length of the match (best of x)
+	// It also extracts the stage of the tournament it is in.
+	c.OnHTML(`.padding.preformatted-text`, func(e *colly.HTMLElement) {
+		texts := strings.Split(e.Text, "\n")
+		// We extract Best of X in top row.
+		// Empty str in middle of slice
+		// Match Context in bottom row
+		if match.BestOfType, err = strconv.Atoi(strings.Split(texts[0], " ")[2]); err != nil {
+			log.Printf("Error in extracting best of type. Attempted to extract from %s text.\n", e.Text)
+			match.BestOfType = 0
+		}
+		match.Stage = texts[2][2:]
+	})
+
+	// This function extracts the name of the event that the match is played as a part of.
+	c.OnHTML(`.event.text-ellipsis`, func(e *colly.HTMLElement) {
+		match.Event = e.Text
+		match.EventID = extractID(e.ChildAttr("a", "href"))
+	})
+
+	// This function extracts the exact unix time of the estimated match start
+
+	c.OnHTML(`.timeAndEvent`, func(e *colly.HTMLElement) {
+		match.MatchTimeEpoch, err = strconv.Atoi(e.ChildAttr(".time", "data-unix"))
+		if err != nil {
+			log.Printf("Could not get time from match page.\n")
+		}
+	})
+
 	if err != nil {
 		return match, err
 	}
@@ -69,9 +104,9 @@ func ExtractMatch(url string) (match MatchData, err error) {
 	return match, nil
 }
 
-// whoWin extracts data from a 'teamx-gradient' html element from match pages.
+// extractWinner extracts data from a 'teamx-gradient' html element from match pages.
 // winner returns a 1 (for Won) that element has a 'won' div inside it. If there is a 'lost' div winner is a 0 (for lost), if a 'tie' div is found, winner is set to 2
-func whoWin(e *colly.HTMLElement) (winner int8, score SeriesScore, err error) {
+func extractWinner(e *colly.HTMLElement) (winner int8, score SeriesScore, err error) {
 	s := e.DOM.Children().Find(".won")
 
 	if len(s.Nodes) > 0 {
@@ -103,14 +138,20 @@ func whoWin(e *colly.HTMLElement) (winner int8, score SeriesScore, err error) {
 	return
 }
 
-func teamURLData(url string, t *Team) {
+func extractTeamURLData(url string, t *Team) {
 	t.TeamURL = baseURL + url
-	t.TeamID = strings.Split(url, "/")[2]
+	t.TeamID = extractID(url)
 	t.Name = strings.Split(url, "/")[3]
 
 }
 
-// @TODO abstract team data extraction into function. smilar to 'whoWin'
+// extracts ID from relative URL
+func extractID(url string) (id string) {
+	id = strings.Split(url, "/")[2]
+	return
+}
+
+// @TODO abstract team data extraction into function. smilar to 'extractWinner'
 // @TODO check that match has starting via extracted unix timestamp of match start.
 
 func parseErr(err error) error {
