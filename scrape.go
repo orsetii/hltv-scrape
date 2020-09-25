@@ -18,6 +18,7 @@ type MatchData struct { // @TODO add Map URLS into this struct. Change mapextrac
 	BestOfType int    // Best of what? 3 or 1 or 5?
 	Stage      string // What stage of the tournament the match was played in( semi final, final etc...)
 	Winner     int8   // Team that won the game. 1  for Team0, 2 for Team1 and 0 for a draw.
+	Vetos      VetoList
 	MapLinks   []string
 	MapsPlayed []MapData
 	// Scrape Metadata
@@ -45,16 +46,11 @@ type MapData struct { // @TODO add selector strings like XML decoding. Example i
 	Team1PlayerData      [4]PlayerMapPerf
 }
 
-type VetoList struct {
-	Bans  map[int]MapBan  // Bans keyed by what stage of PB they were banned at.
-	Picks map[int]MapPick // Picks keyed by what stage of PB they were picked at. This could be compressed further if not accounting for BO5 matches.
-}
-type MapBan struct {
-	Team    bool
-	MapName string
-}
-type MapPick struct {
-	Team    bool
+// VetoList is a map of the vetos of the match. Keyed by when each action was taken
+type VetoList []veto
+
+type veto struct {
+	BanPick int8 // 0 if map picked, 1 if map banned, 2 if map left over
 	MapName string
 }
 
@@ -82,11 +78,10 @@ type PlayerMapPerf struct {
 type Team struct {
 	TeamURL string
 	TeamID  string
-
-	Name string
-
+	Name    string
 	Players []Player
 }
 
 type Player struct { //@TODO
+
 }

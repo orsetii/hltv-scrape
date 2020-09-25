@@ -88,7 +88,6 @@ func ExtractMatch(url string) (match MatchData, err error) {
 	})
 
 	// This function extracts the exact unix time of the estimated match start
-
 	c.OnHTML(`.timeAndEvent`, func(e *colly.HTMLElement) {
 		match.MatchTimeEpoch, err = strconv.Atoi(e.ChildAttr(".time", "data-unix"))
 		if err != nil {
@@ -96,12 +95,61 @@ func ExtractMatch(url string) (match MatchData, err error) {
 		}
 	})
 
+	// Extract PickBans
+	c.OnHTML(`.standard-box.veto-box`, func(e *colly.HTMLElement) {
+		kids := e.DOM.Children()
+		match.Vetos, err = extractVetos(kids.Children().Text())
+	})
+
 	if err != nil {
 		return match, err
 	}
 	c.Visit(url)
-
 	return match, nil
+}
+
+func extractVetos(data string) (result VetoList, err error) {
+	result = make(VetoList, 7)
+	l := strings.Split(data, ".")
+	if len(l) <= 1 {
+		return VetoList{}, fmt.Errorf("could not extract Veto data")
+	}
+	log.Printf("%+#v", l)
+	for i, v := range l {
+		if i == 0 {
+			continue
+		}
+		current := v[1 : len(v)-1]
+		var pb int8
+		splitVeto := strings.Split(current, " ")
+		if strings.Contains(current, "removed") {
+			// If we get here, we have hit a ban.
+			pb = 1
+		} else if strings.Contains(current, "picked") {
+			// This func does nothing as picked value is 0, just here to check so not included in else statement.
+		} else {
+			// If we get here, there is either a fucked up string or this is the last map.
+			// Check that this is the last element in the veto.
+			if i != len(l)-1 {
+				// If we get here, we have an error
+				return result, fmt.Errorf("error extracting veto element %d", i)
+			}
+
+		}
+		var mname string
+		if i == len(l)-1 {
+			pb = 2
+			mname = splitVeto[0]
+		} else {
+			log.Println(current)
+			mname = splitVeto[len(splitVeto)-1]
+		}
+		result[i-1] = veto{
+			BanPick: pb,
+			MapName: mname,
+		}
+	}
+	return
 }
 
 // extractWinner extracts data from a 'teamx-gradient' html element from match pages.
