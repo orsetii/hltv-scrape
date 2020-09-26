@@ -46,7 +46,7 @@ type MapData struct { // @TODO add selector strings like XML decoding. Example i
 	Team1PlayerData      [4]PlayerMapPerf
 }
 
-// VetoList is a map of the vetos of the match. Keyed by when each action was taken
+// VetoList is a map of the vetos of the match. Keyed by when each pick/ban/leftover map happened.
 type VetoList []veto
 
 type veto struct {
@@ -54,8 +54,10 @@ type veto struct {
 	MapName string
 }
 
+// PlayerMapPerf holds data about a players performance extracted from a stats page
 type PlayerMapPerf struct {
-	Playername Player
+	// Data about the player this data refers to
+	PlayerData Player
 	// Kills is the total kills INCLUDING headshots
 	Kills     int8
 	Headshots int8
@@ -74,7 +76,7 @@ type PlayerMapPerf struct {
 	Rating         float32
 }
 
-// @TODO extract data from Team page.
+// Team is the data from the match pages, very basic data and holds all players that played for that team
 type Team struct {
 	TeamURL string
 	TeamID  string
@@ -82,6 +84,10 @@ type Team struct {
 	Players []Player
 }
 
-type Player struct { //@TODO
-
+// Player holds basic player data extracted from a match page.
+type Player struct {
+	PlayerURL     string
+	PlayerID      string
+	Name          string
+	TeamPlayedFor *Team
 }

@@ -96,16 +96,74 @@ func ExtractMatch(url string) (match MatchData, err error) {
 	})
 
 	// Extract PickBans
+
 	c.OnHTML(`.standard-box.veto-box`, func(e *colly.HTMLElement) {
 		kids := e.DOM.Children()
 		match.Vetos, err = extractVetos(kids.Children().Text())
+		if err != nil {
+			log.Println(err)
+		}
 	})
 
 	if err != nil {
 		return match, err
 	}
+
+	// We could extract total stats across maps however I do not want this data. Per map data is much more useful in data analysis.
+
+	// Finally, we extract who played in the games. We could extract this from the teamdata, but obviously team rosters change, and individual performance can be extremely useful.
+	// Counter to monitor which team we are looking at data for.
+	var tCounter int = 0
+	c.OnHTML(`.lineup.standard-box`, func(e *colly.HTMLElement) {
+		var curTeam *Team
+		tname := e.ChildAttr(".logo", "alt")
+		log.Printf("Team: %s", tname)
+
+		// Error Checking...
+		if tname == "" {
+			// If nothing in the ChildAttr must not be in right place, return out of function.
+			return
+		}
+		if tCounter > 1 {
+			// If we get here we have encountered an error, and are attempting to find data for a third team!
+			log.Printf("Error parsing data, too many Team HTML elements \n")
+			return
+		}
+
+		if tCounter == 0 {
+			// We know we are working with team0:
+			curTeam = &match.Team0
+
+		} else if tCounter == 1 {
+			curTeam = &match.Team1
+		}
+
+		// This iterates over each player dataframe for that team.
+		e.ForEach(`.player.player-image`, func(playerIndex int, e *colly.HTMLElement) {
+			log.Printf("Getting data for player %d of Team %s", playerIndex, tname)
+			pData := Player{
+				TeamPlayedFor: curTeam,
+			}
+			extractPlayerData(e.ChildAttr(`a`, "href"), &pData)
+			curTeam.Players = append(curTeam.Players, pData)
+		})
+		tCounter++
+		return
+	})
+
+	// All player data from match page extracted. Now, for each map played, extract map data
+	for i, link := range match.MapLinks {
+		match.MapsPlayed[i] = *ExtractMapData(link)
+	}
+
 	c.Visit(url)
 	return match, nil
+}
+
+func extractPlayerData(url string, p *Player) {
+	p.PlayerURL = baseURL + url
+	p.PlayerID = extractID(url)
+	p.Name = strings.Split(url, "/")[3]
 }
 
 func extractVetos(data string) (result VetoList, err error) {
@@ -199,8 +257,11 @@ func extractID(url string) (id string) {
 	return
 }
 
-// @TODO abstract team data extraction into function. smilar to 'extractWinner'
-// @TODO check that match has starting via extracted unix timestamp of match start.
+// ExtractMapData will extract all data needed for the MapData struct.
+// @TODO complete this function!
+func ExtractMapData(url string) (m *MapData) {
+	return
+}
 
 func parseErr(err error) error {
 
