@@ -13,10 +13,22 @@ import (
 const baseURL = "https://www.hltv.org"
 
 // ExtractStats is used on a HLTV stats page, it extracts all data into applicable struct(s)
-func ExtractStats(statsPageURL string) (data MapData, err error) { // @TODO Work on the extract stats function.
+func ExtractStats(url string) (data *MapData) { // @TODO Work on the extract stats function.
+	data.statPageURL = url
 
-	//c := colly.NewCollector() // Could look to add options here for optimization
-	return MapData{}, nil //placeholder
+	c := colly.NewCollector() // Could look to add options here for optimization
+
+	c.OnHTML(`.stats-table`, func(e *colly.HTMLElement) {
+		// Delve into each table for each team.
+		// @TODO Register which team we are inside of.
+		// @TODO complete this...
+		table := e.DOM.Children().Find("tbody")
+		e.ForEach(`tr`, func(int, *colly.HTMLElement) {
+			// This is executed for every row in the event.
+		})
+	})
+	c.Visit(url)
+	return
 }
 
 // ExtractMatch is used on a HLTV matchPage. It extracts all data from the matchpage, then will call functions to extract data from each player, and each map.
@@ -44,7 +56,7 @@ func ExtractMatch(url string) (match MatchData, err error) {
 				match.Winner = 1
 			}
 
-		} //@TODO grab more data in both statements..
+		}
 		team1URL, exists2 := e.DOM.Find(".team2-gradient").Children().Attr("href") // Locates
 		if exists2 {
 			extractTeamURLData(team1URL, &match.Team1)
@@ -102,6 +114,10 @@ func ExtractMatch(url string) (match MatchData, err error) {
 		kids := e.DOM.Children()
 		match.Vetos = extractVetos(kids.Children().Text())
 	})
+	c.OnHTML(`.flexbox.left-right-padding`, func(e *colly.HTMLElement) {
+		match.isDemo = true
+		match.DemoLinks = append(match.DemoLinks, baseURL+e.Attr("href"))
+	})
 
 	if err != nil {
 		return match, err
@@ -148,9 +164,9 @@ func ExtractMatch(url string) (match MatchData, err error) {
 		return
 	})
 
-	// All player data from match page extracted. Now, for each map played, extract map data
+	// All player data from match page extracted. Now, for each map that was played, extract map data
 	for i, link := range match.MapLinks {
-		match.MapsPlayed[i] = *ExtractMapData(link)
+		match.MapsPlayed[i] = *extractStats(link)
 	}
 
 	// Record time data was scraped
@@ -251,12 +267,6 @@ func extractTeamURLData(url string, t *Team) {
 // extracts ID from relative URL
 func extractID(url string) (id string) {
 	id = strings.Split(url, "/")[2]
-	return
-}
-
-// ExtractMapData will extract all data needed for the MapData struct.
-// @TODO complete this function!
-func ExtractMapData(url string) (m *MapData) {
 	return
 }
 

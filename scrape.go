@@ -21,12 +21,14 @@ type MatchData struct {
 	Event            string      // What event the match was played in.
 	EventID          string      // Id of the event located in the URL, similar to matchID
 
-	BestOfType int    // Best of what? 3 or 1 or 5?
-	Stage      string // What stage of the tournament the match was played in( semi final, final etc...)
-	Winner     int8   // Team that won the game. 1  for Team0, 2 for Team1 and 0 for a draw.
-	Vetos      VetoList
-	MapLinks   []string
-	MapsPlayed []MapData
+	BestOfType int       // Best of what? 3 or 1 or 5?
+	Stage      string    // What stage of the tournament the match was played in( semi final, final etc...)
+	Winner     int8      // Team that won the game. 1  for Team0, 2 for Team1 and 0 for a draw.
+	Vetos      VetoList  // Data of veto process.
+	MapLinks   []string  //  Links for each map page.
+	MapsPlayed []MapData // Slice containing mapdata for each map played
+	isDemo     bool      // true if there is a demo for this matchpage.
+	DemoLinks  string    // We only need one links as all demos are compressed into rar format.
 	// Scrape Metadata
 	ScrapedAt time.Time // Time webpage was scraped.
 }
