@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly/v2"
 )
@@ -99,10 +100,7 @@ func ExtractMatch(url string) (match MatchData, err error) {
 
 	c.OnHTML(`.standard-box.veto-box`, func(e *colly.HTMLElement) {
 		kids := e.DOM.Children()
-		match.Vetos, err = extractVetos(kids.Children().Text())
-		if err != nil {
-			log.Println(err)
-		}
+		match.Vetos = extractVetos(kids.Children().Text())
 	})
 
 	if err != nil {
@@ -140,7 +138,6 @@ func ExtractMatch(url string) (match MatchData, err error) {
 
 		// This iterates over each player dataframe for that team.
 		e.ForEach(`.player.player-image`, func(playerIndex int, e *colly.HTMLElement) {
-			log.Printf("Getting data for player %d of Team %s", playerIndex, tname)
 			pData := Player{
 				TeamPlayedFor: curTeam,
 			}
@@ -156,6 +153,8 @@ func ExtractMatch(url string) (match MatchData, err error) {
 		match.MapsPlayed[i] = *ExtractMapData(link)
 	}
 
+	// Record time data was scraped
+	match.ScrapedAt = time.Now()
 	c.Visit(url)
 	return match, nil
 }
@@ -166,13 +165,12 @@ func extractPlayerData(url string, p *Player) {
 	p.Name = strings.Split(url, "/")[3]
 }
 
-func extractVetos(data string) (result VetoList, err error) {
+func extractVetos(data string) (result VetoList) {
 	result = make(VetoList, 7)
 	l := strings.Split(data, ".")
-	if len(l) <= 1 {
-		return VetoList{}, fmt.Errorf("could not extract Veto data")
+	if len(l) <= 1 && l[0] == "" {
+		return
 	}
-	log.Printf("%+#v", l)
 	for i, v := range l {
 		if i == 0 {
 			continue
@@ -190,7 +188,7 @@ func extractVetos(data string) (result VetoList, err error) {
 			// Check that this is the last element in the veto.
 			if i != len(l)-1 {
 				// If we get here, we have an error
-				return result, fmt.Errorf("error extracting veto element %d", i)
+				return
 			}
 
 		}
@@ -199,7 +197,6 @@ func extractVetos(data string) (result VetoList, err error) {
 			pb = 2
 			mname = splitVeto[0]
 		} else {
-			log.Println(current)
 			mname = splitVeto[len(splitVeto)-1]
 		}
 		result[i-1] = veto{

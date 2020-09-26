@@ -1,9 +1,15 @@
 package hltvscrape
 
+import "time"
+
 var ()
 
+// SeriesScore is a special type for holding a score of a series of a CS:GO match. Usually used in best of 2+
 type SeriesScore int8
-type MatchData struct { // @TODO add Map URLS into this struct. Change mapextractdata function to work from the statpage urls.
+
+//MatchData contains data about a match, extraced from its matchPage.
+// It also contains more in-depth data which is extracted into sub-structs on the MatchData struct.
+type MatchData struct {
 	// Data extracted from main match page.
 	MatchURL         string      // URL of the match page.
 	MatchID          string      // The ID of the match as located in the middle of 'url.../matches/{MATCHID}/north-vs...
@@ -22,9 +28,10 @@ type MatchData struct { // @TODO add Map URLS into this struct. Change mapextrac
 	MapLinks   []string
 	MapsPlayed []MapData
 	// Scrape Metadata
-	ScrapedAtEpoc int // Unix Time webpage was scraped.
+	ScrapedAt time.Time // Time webpage was scraped.
 }
 
+// MapData contains Data about the map stats extracted from a map stats page.
 type MapData struct { // @TODO add selector strings like XML decoding. Example in: https://github.com/gocolly/colly/blob/master/_examples/hackernews_comments/hackernews_comments.go
 	statPageURL string
 	MapName     string

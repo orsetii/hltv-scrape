@@ -19,7 +19,8 @@ func logData(ret MatchData) {
 
 	log.Printf("%+v", ret)
 	log.Printf("Loaded Match %s vs %s", ret.Team0.Name, ret.Team1.Name)
-	log.Printf("Winner: %v", ret.Winner)
+	log.Printf("Winner: Team%d", ret.Winner-1)
 	log.Printf("Team0 Score: %d", ret.Team0SeriesScore)
 	log.Printf("Team1 Score: %d", ret.Team1SeriesScore)
+	log.Println("----DATA PROCESSING FINISHED----")
 }
