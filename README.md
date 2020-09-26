@@ -11,10 +11,8 @@ go get -u github.com/orsetii/hltv-scrape
 
 ## @TODO 
 
-- Finish data for past match page. 
+- Create scraper for past matches, which then calls matchdata scrape on each one. Needs to be able extract player data for the team past data we want to obtain data on. Create method on a map data to analyze the demo linked in the mapdata struct. This will call the defuselib parsing functions.
 
-- Create scraper for past matches, which then calls matchdata scrape on each one.
+## Usage Notice
 
-- Add functions to send data into CSV/other format(maybe)
-
-- Figure out how to properly convert unix time without bugging out. Currently using epoch time as an int32.
+HLTV do not allow use of scraping without permission. Use at your own responbility.
