@@ -14,20 +14,223 @@ const baseURL = "https://www.hltv.org"
 
 // ExtractStats is used on a HLTV stats page, it extracts all data into applicable struct(s)
 func ExtractStats(url string) (data *MapData) { // @TODO Work on the extract stats function.
+	data = new(MapData)
+	// @TODO EXTRACT DATA: MapName, Winner, Both TeamData, Player Data for all players, sorted via team.
 	data.statPageURL = url
-
+	log.Println("Loading stats from: ", url)
 	c := colly.NewCollector() // Could look to add options here for optimization
-
+	var tCounter int
 	c.OnHTML(`.stats-table`, func(e *colly.HTMLElement) {
 		// Delve into each table for each team.
-		// @TODO Register which team we are inside of.
-		// @TODO complete this...
-		table := e.DOM.Children().Find("tbody")
-		e.ForEach(`tr`, func(int, *colly.HTMLElement) {
-			// This is executed for every row in the event.
+		// Check what team we are in
+		if tCounter != 0 && tCounter != 1 {
+			return
+		}
+
+		// Get Player data in table..
+		e.ForEach(`tbody`, func(i int, e *colly.HTMLElement) {
+			// For each row in table...
+			e.ForEach(`tr`, func(i int, e *colly.HTMLElement) {
+				var err error
+				var p *PlayerMapPerf
+				if tCounter == 0 {
+					p = &data.Team0PlayerData[i]
+				} else if tCounter == 1 {
+					p = &data.Team1PlayerData[i]
+				} else {
+					log.Printf("Team index overrun at L37 in stats.go. Attempting to load teamid %d", tCounter)
+				}
+				// Get Player Data
+				var ok bool
+				plink, ok := e.DOM.Find(`.st-player`).Find("a").Attr("href")
+				if !ok {
+					log.Printf("Error in getting data for player id %d of Team%d\n", i, tCounter)
+				}
+				// Get name from URL
+				splitLink := strings.Split(plink, "/")
+				p.Name = splitLink[len(splitLink)-1]
+				// Extract kills and headshots
+				p.Kills, p.Headshots, err = splitValSubVal(e.DOM.Find(`.st-kills`).Text())
+				if err != nil {
+					log.Println("Could not get kill/headshot count. Error: ", err)
+				}
+				p.Assists, p.FlashAssists, err = splitValSubVal(e.DOM.Find(`.st-assists`).Text())
+				if err != nil {
+					log.Println("Could not get assist/flash assist count. Error: ", err)
+				}
+
+				p.Deaths, err = strconv.Atoi(e.DOM.Find(`.st-deaths`).Text())
+				kastp := e.DOM.Find(`.st-kdratio`).Text()[:4]
+				p.KASTPercentage, err = parseFloat(kastp)
+				if err != nil {
+					log.Println("Could not get KAST percentage. Error: ", err)
+				}
+				var pkddif string
+				pkddif = e.DOM.Find(`.st-kddiff`).Text()
+				if pkddif == "" {
+					log.Printf("Error in getting first kill difference. No data found.")
+				} else {
+					p.KillDeathDiff, err = parseDiff(pkddif)
+				}
+				if err != nil {
+					log.Println("Error getting KD Diff into int. Error: ", err)
+				}
+				p.ADR, err = parseFloat(e.DOM.Find(`.st-adr`).Text())
+				if err != nil {
+					log.Println("Error getting ADR into float value. Error: ", err)
+				}
+				// fk diff is players first kills - first kills on the player
+				var pfkdiff string
+				pfkdiff = e.DOM.Find(`.st-fkdiff`).Text()
+				if pfkdiff != "" {
+					p.FirstKillsDiff, err = parseDiff(pfkdiff)
+				} else {
+					log.Printf("Error in getting first kill difference. No data found.")
+				}
+
+				p.Rating, err = parseFloat(e.DOM.Find(`.st-rating`).Text())
+				if err != nil {
+					log.Printf("Error getting and parsing rating for player %d. Error: %s\n", i, err)
+				}
+				log.Printf("Player Data extracted: %+v", *p)
+			})
+
 		})
+		tCounter++
+	})
+	c.OnHTML(`.match-info-row`, func(e *colly.HTMLElement) {
+		var err error
+		childs := e.DOM.Children().Text()
+		// We extract Text from the each row.
+		if strings.Contains(childs, "Breakdown") {
+			// If we are looking at the breakdown row
+			splitbr := Splitter(childs, " :()")
+			// [0] = Team0 Total
+			// [1] = Team1 Total
+			// [2] = Team0 First Half
+			// [3] = Team1 First Half
+			// [4] = Team0 Second Half
+			// [5] = Team1 Second Half
+
+			// Extract Team0 Total Score
+			data.Team0ScoreTotal, err = strconv.Atoi(splitbr[0])
+			if err != nil {
+				log.Printf("Could not get Team0 Total Score. Error: %s\n", err)
+			}
+			// Extract Team1 Total Score
+			data.Team1ScoreTotal, err = strconv.Atoi(splitbr[1])
+			if err != nil {
+				log.Printf("Could not get Team1 Total Score. Error: %s\n", err)
+			}
+			// Extract Team0 First Half Score
+			data.Team0ScoreFirstHalf, err = strconv.Atoi(splitbr[2])
+			if err != nil {
+				log.Printf("Could not get Team0 First Half Score. Error: %s\n", err)
+			}
+			// Extract Team1 First Half Score
+			data.Team1ScoreFirstHalf, err = strconv.Atoi(splitbr[3])
+			if err != nil {
+				log.Printf("Could not get Team0 Sec Half Score. Error: %s\n", err)
+			}
+			// Extract Team0 Second Half Score
+			data.Team0ScoreSecondHalf, err = strconv.Atoi(splitbr[4])
+			if err != nil {
+				log.Printf("Could not get Team0 First Half Score")
+			}
+			// Extract Team1 Second Half Score
+			data.Team1ScoreSecondHalf, err = strconv.Atoi(splitbr[5])
+			if err != nil {
+				log.Printf("Could not get Team0 First Half Score")
+			}
+
+		} else if strings.Contains(childs, "Team rating") {
+			pts := Splitter(childs, " :")
+			data.Team0TeamRating, err = parseFloat(pts[0][:4])
+			if err != nil {
+				log.Printf("Could not get Team0 Team Rating. Error: %s\n", err)
+			}
+			data.Team1TeamRating, err = parseFloat(pts[1][:4])
+			if err != nil {
+				log.Printf("Could not get Team1 Team Rating. Error: %s\n", err)
+			}
+		} else if strings.Contains(childs, "First kills") {
+			pts := Splitter(childs, " :F")
+			data.Team0FirstKills, err = strconv.Atoi(pts[0])
+			if err != nil {
+				log.Printf("Could not get Team0 First Kills. Error: %s\n", err)
+			}
+			data.Team1FirstKills, err = strconv.Atoi(pts[1])
+			if err != nil {
+				log.Printf("Could not get Team1 First Kills. Error: %s\n", err)
+			}
+		} else if strings.Contains(childs, "Clutches won") {
+			pts := Splitter(childs, " :C")
+			data.Team0FirstKills, err = strconv.Atoi(pts[0])
+			if err != nil {
+				log.Printf("Could not get Team0 Clutches Won. Error: %s\n", err)
+			}
+			data.Team1ClutchesWon, err = strconv.Atoi(pts[1])
+			if err != nil {
+				log.Printf("Could not get Team1 Clutches Won. Error: %s\n", err)
+			}
+		}
+	})
+	if data.Team0ScoreTotal > data.Team1ScoreTotal {
+		data.Winner = 1
+	} else if data.Team0ScoreTotal < data.Team1ScoreTotal {
+		data.Winner = 2
+	}
+	c.OnHTML(`.match-info-box`, func(e *colly.HTMLElement) {
+		for _, v := range Maps {
+			if strings.Contains(e.Text, v) {
+				data.MapName = v
+				break
+			}
+		}
+		if data.MapName == "" {
+			log.Printf("Could not find a map in the HTML.")
+		}
 	})
 	c.Visit(url)
+
+	return
+}
+
+// Splitter splits s string by all runes in the splits string
+func Splitter(s string, splits string) []string {
+	m := make(map[rune]int)
+	for _, r := range splits {
+		m[r] = 1
+	}
+
+	splitter := func(r rune) bool {
+		return m[r] == 1
+	}
+
+	return strings.FieldsFunc(s, splitter)
+}
+
+func parseDiff(s string) (ret int, err error) {
+	if s == "" {
+		log.Println("hit")
+	}
+	fChar := s[0]
+	if fChar == '+' {
+		s = s[1:]
+	}
+	ret, err = strconv.Atoi(s)
+	return
+}
+
+// This function splits a value from the original, and the value in the brackets, and returns both as integers
+func splitValSubVal(s string) (first, bracketed int, err error) {
+	first, err = strconv.Atoi(strings.Split(s, " ")[0])
+	if err != nil {
+		return
+	}
+	spl := strings.Split(s, "(")
+	spl = strings.Split(spl[1], ")")
+	bracketed, err = strconv.Atoi(spl[0])
 	return
 }
 
@@ -41,7 +244,7 @@ func ExtractMatch(url string) (match MatchData, err error) {
 	}
 
 	// Now we start scraping into the Struct
-	c := colly.NewCollector()
+	c := colly.NewCollector(colly.UserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:83.0) Gecko/20100101 Firefox/83.0"))
 	// Extract Team Data for both teams via the 'team' div class(s)
 
 	c.OnHTML(`.team`, func(e *colly.HTMLElement) {
@@ -116,7 +319,7 @@ func ExtractMatch(url string) (match MatchData, err error) {
 	})
 	c.OnHTML(`.flexbox.left-right-padding`, func(e *colly.HTMLElement) {
 		match.isDemo = true
-		match.DemoLinks = append(match.DemoLinks, baseURL+e.Attr("href"))
+		match.DemoLinks = baseURL + e.Attr("href")
 	})
 
 	if err != nil {
@@ -165,13 +368,14 @@ func ExtractMatch(url string) (match MatchData, err error) {
 	})
 
 	// All player data from match page extracted. Now, for each map that was played, extract map data
-	for i, link := range match.MapLinks {
-		match.MapsPlayed[i] = *extractStats(link)
-	}
 
 	// Record time data was scraped
 	match.ScrapedAt = time.Now()
 	c.Visit(url)
+	match.MapsPlayed = make([]MapData, len(match.MapLinks))
+	for i, link := range match.MapLinks {
+		match.MapsPlayed[i] = *ExtractStats(link)
+	}
 	return match, nil
 }
 
@@ -220,6 +424,16 @@ func extractVetos(data string) (result VetoList) {
 			MapName: mname,
 		}
 	}
+	return
+}
+
+func parseFloat(s string) (ret float32, err error) {
+	prec, err := strconv.ParseFloat(s, 32)
+	if err != nil {
+		return
+	}
+	// As we have chosen 32 bit , we can convert to a 32 bit float without fucking up the value.
+	ret = float32(prec)
 	return
 }
 

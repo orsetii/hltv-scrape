@@ -37,22 +37,24 @@ type MatchData struct {
 type MapData struct { // @TODO add selector strings like XML decoding. Example in: https://github.com/gocolly/colly/blob/master/_examples/hackernews_comments/hackernews_comments.go
 	statPageURL string
 	MapName     string
-	Winner      int8
-	Picker      int8
+	// 1 for Team0, 2 for Team1, 0 for draw
+	Winner int8
 
-	Team0ScoreFirstHalf  int8
-	Team0ScoreSecondHalf int8
-	Team0ScoreTotal      int8
+	Team0ScoreFirstHalf  int
+	Team0ScoreSecondHalf int
+	Team0ScoreTotal      int
 	Team0TeamRating      float32
-	Team0FirstKills      int8
-	Team0PlayerData      [4]PlayerMapPerf
+	Team0FirstKills      int
+	Team0ClutchesWon     int
+	Team0PlayerData      [5]PlayerMapPerf
 
-	Team1ScoreFirstHalf  int8
-	Team1ScoreSecondHalf int8
-	Team1ScoreTotal      int8
+	Team1ScoreFirstHalf  int
+	Team1ScoreSecondHalf int
+	Team1ScoreTotal      int
 	Team1TeamRating      float32
-	Team1FirstKills      int8
-	Team1PlayerData      [4]PlayerMapPerf
+	Team1FirstKills      int
+	Team1ClutchesWon     int
+	Team1PlayerData      [5]PlayerMapPerf
 }
 
 // VetoList is a map of the vetos of the match. Keyed by when each pick/ban/leftover map happened.
@@ -66,22 +68,22 @@ type veto struct {
 // PlayerMapPerf holds data about a players performance extracted from a stats page
 type PlayerMapPerf struct {
 	// Data about the player this data refers to
-	PlayerData Player
+	Name string
 	// Kills is the total kills INCLUDING headshots
-	Kills     int8
-	Headshots int8
+	Kills     int
+	Headshots int
 	// Assists is the total assists INCLUDING flashassists
-	Assists      int8
-	FlashAssists int8
-	Deaths       int8
+	Assists      int
+	FlashAssists int
+	Deaths       int
 	// KASTPercentage is the amount of rounds that the player got a Kill, Survived, an Assist or got Traded.
 	KASTPercentage float32
 	// KillDeathDiff is Kills - Deaths
-	KillDeathDiff int8
+	KillDeathDiff int
 	// ADR is the Average Damage per Round
 	ADR float32
 	// FirstKillsDiff is FirstKills - FirstDeaths
-	FirstKillsDiff int8
+	FirstKillsDiff int
 	Rating         float32
 }
 
@@ -99,4 +101,16 @@ type Player struct {
 	PlayerID      string
 	Name          string
 	TeamPlayedFor *Team
+}
+
+// Maps is a list of all maps in or near the map pool
+var Maps = []string{
+	"Dust2",
+	"Mirage",
+	"Cache",
+	"Vertigo",
+	"Overpass",
+	"Inferno",
+	"Nuke",
+	"Train",
 }
