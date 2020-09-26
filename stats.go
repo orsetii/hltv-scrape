@@ -13,9 +13,8 @@ import (
 const baseURL = "https://www.hltv.org"
 
 // ExtractStats is used on a HLTV stats page, it extracts all data into applicable struct(s)
-func ExtractStats(url string) (data *MapData) { // @TODO Work on the extract stats function.
+func ExtractStats(url string) (data *MapData) {
 	data = new(MapData)
-	// @TODO EXTRACT DATA: MapName, Winner, Both TeamData, Player Data for all players, sorted via team.
 	data.statPageURL = url
 	log.Println("Loading stats from: ", url)
 	c := colly.NewCollector() // Could look to add options here for optimization
