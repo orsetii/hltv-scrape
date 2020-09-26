@@ -28,7 +28,7 @@ type MatchData struct {
 	MapLinks   []string  //  Links for each map page.
 	MapsPlayed []MapData // Slice containing mapdata for each map played
 	isDemo     bool      // true if there is a demo for this matchpage.
-	DemoLinks  string    // We only need one links as all demos are compressed into rar format.
+	DemoLink   string    // We only need one links as all demos are compressed into rar format.
 	// Scrape Metadata
 	ScrapedAt time.Time // Time webpage was scraped.
 }

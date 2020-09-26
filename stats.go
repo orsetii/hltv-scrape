@@ -318,7 +318,7 @@ func ExtractMatch(url string) (match MatchData, err error) {
 	})
 	c.OnHTML(`.flexbox.left-right-padding`, func(e *colly.HTMLElement) {
 		match.isDemo = true
-		match.DemoLinks = baseURL + e.Attr("href")
+		match.DemoLink = baseURL + e.Attr("href")
 	})
 
 	if err != nil {
