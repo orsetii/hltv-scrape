@@ -10,7 +10,7 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-const baseURL = "https://www.hltv.org"
+const BaseURL = "https://www.hltv.org"
 
 // ExtractStats is used on a HLTV stats page, it extracts all data into applicable struct(s)
 func ExtractStats(url string) (data *MapData) {
@@ -164,7 +164,7 @@ func ExtractStats(url string) (data *MapData) {
 			}
 		} else if strings.Contains(childs, "Clutches won") {
 			pts := Splitter(childs, " :C")
-			data.Team0FirstKills, err = strconv.Atoi(pts[0])
+			data.Team0ClutchesWon, err = strconv.Atoi(pts[0])
 			if err != nil {
 				log.Printf("Could not get Team0 Clutches Won. Error: %s\n", err)
 			}
@@ -223,8 +223,14 @@ func parseDiff(s string) (ret int, err error) {
 
 // This function splits a value from the original, and the value in the brackets, and returns both as integers
 func splitValSubVal(s string) (first, bracketed int, err error) {
-	first, err = strconv.Atoi(strings.Split(s, " ")[0])
+
+	first, err = strconv.Atoi(strings.Split(s, " ")[0]) // May be erroring on values with no brackets!
 	if err != nil {
+		return
+	}
+	if !strings.Contains(s, "(") {
+		// If there is no bracketed value, it means its a zero for it.
+		bracketed = 0
 		return
 	}
 	spl := strings.Split(s, "(")
@@ -318,7 +324,7 @@ func ExtractMatch(url string) (match MatchData, err error) {
 	})
 	c.OnHTML(`.flexbox.left-right-padding`, func(e *colly.HTMLElement) {
 		match.isDemo = true
-		match.DemoLink = baseURL + e.Attr("href")
+		match.DemoLink = BaseURL + e.Attr("href")
 	})
 
 	if err != nil {
@@ -379,7 +385,7 @@ func ExtractMatch(url string) (match MatchData, err error) {
 }
 
 func extractPlayerData(url string, p *Player) {
-	p.PlayerURL = baseURL + url
+	p.PlayerURL = BaseURL + url
 	p.PlayerID = extractID(url)
 	p.Name = strings.Split(url, "/")[3]
 }
@@ -471,7 +477,7 @@ func extractWinner(e *colly.HTMLElement) (winner int8, score SeriesScore, err er
 }
 
 func extractTeamURLData(url string, t *Team) {
-	t.TeamURL = baseURL + url
+	t.TeamURL = BaseURL + url
 	t.TeamID = extractID(url)
 	t.Name = strings.Split(url, "/")[3]
 

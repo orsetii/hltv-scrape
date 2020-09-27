@@ -6,13 +6,17 @@ import (
 )
 
 func TestExtractMatch(t *testing.T) {
-	log.Println("Extracting data from Match...")
-	// ret, _ := ExtractMatch("https://www.hltv.org/matches/2344233/movistar-riders-vs-sj-dreamhack-open-fall-2020-closed-qualifier")
-	// logData(ret)
-	// ret, _ = ExtractMatch("https://www.hltv.org/matches/2344232/x6tence-vs-mousesports-dreamhack-open-fall-2020-closed-qualifier")
-	// logData(ret)
-	ret, _ := ExtractMatch("https://www.hltv.org/matches/2344119/beyond-vs-checkmate-perfect-world-asia-league-fall-2020")
-	logData(ret)
+	// log.Println("Extracting data from Match...")
+	// ret, err := ExtractPastMatches(3, "4579")
+	// log.Printf("Error in getting past matches: %s", err)
+	// for _, v := range ret {
+	// 	logData(v)
+	// }
+	//ret, _ := ExtractMatch("https://www.hltv.org/matches/2344119/beyond-vs-checkmate-perfect-world-asia-league-fall-2020")
+	//logData(ret)
+
+	ret, _ := ExtractPastMaps(5, "4579", "LowLandLions", "Dust2")
+	log.Printf("%+v", ret)
 }
 
 func logData(ret MatchData) {
